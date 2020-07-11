@@ -2,6 +2,7 @@ package ru.nehodov.tourist;
 
 import androidx.fragment.app.FragmentActivity;
 
+import android.location.LocationManager;
 import android.os.Bundle;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -37,10 +38,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        LatLng iAmHere = new LatLng(45.454309, 40.601718);
+        mMap.addMarker(new MarkerOptions().position(iAmHere).title("Marker in my place"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(iAmHere, 15));
     }
 }

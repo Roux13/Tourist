@@ -34,3 +34,6 @@ output.json
 #NDK
 obj/
 .externalNativeBuild
+
+#Google maps api key
+values/google_maps_api.xml

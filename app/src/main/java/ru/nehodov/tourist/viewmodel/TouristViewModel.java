@@ -13,14 +13,14 @@ import ru.nehodov.tourist.repository.TouristRepository;
 
 public class TouristViewModel extends AndroidViewModel {
 
-    private TouristRepository repository;
-    private LiveData<List<UserLocation>> userLocationsLiveData;
+    private final TouristRepository repository;
+    private final LiveData<List<UserLocation>> userLocationsLiveData;
 
     private List<UserLocation> userLocations;
 
-    private MutableLiveData<UserLocation> selectedLocation = new MutableLiveData<>();
+    private final MutableLiveData<UserLocation> selectedLocation = new MutableLiveData<>();
 
-    private MutableLiveData<Boolean> isLocationSelected = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> isLocationSelected = new MutableLiveData<>();
 
     public TouristViewModel(Application application) {
         super(application);

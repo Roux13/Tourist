@@ -22,19 +22,17 @@ public class LocationListFragment extends Fragment
 
     private LocationListFragmentListener listener;
 
-    private RecyclerView recycler;
     private LocationListAdapter adapter;
 
     public static LocationListFragment newInstance() {
-        LocationListFragment fragment = new LocationListFragment();
-        return fragment;
+        return new LocationListFragment();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_location_list, container, false);
-        recycler = view.findViewById(R.id.recycler);
+        RecyclerView recycler = view.findViewById(R.id.recycler);
         recycler.setLayoutManager(new LinearLayoutManager(requireActivity()));
         adapter = new LocationListAdapter(this);
         adapter.setLocations(listener.getLocations());

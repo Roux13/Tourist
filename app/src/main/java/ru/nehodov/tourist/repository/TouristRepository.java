@@ -12,8 +12,8 @@ import ru.nehodov.tourist.storage.TouristDatabase;
 
 public class TouristRepository {
 
-    private UserLocationDao userLocationDao;
-    private LiveData<List<UserLocation>> userLocations;
+    private final UserLocationDao userLocationDao;
+    private final LiveData<List<UserLocation>> userLocations;
 
     public TouristRepository(Application application) {
         TouristDatabase db = TouristDatabase.getDb(application);

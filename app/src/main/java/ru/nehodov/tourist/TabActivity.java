@@ -10,8 +10,8 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import android.Manifest;
 import android.os.Bundle;
-import android.widget.Toast;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -28,15 +28,13 @@ public class TabActivity extends AppCompatActivity
         MapFragment.MapFragmentListener {
 
     private static final int MAP_ITEM_NUMBER = 0;
-    private static final int LOCATIONLIST_ITEM_NUMBER = 1;
+    private static final int LOCATION_LIST_ITEM_NUMBER = 1;
 
     private ActivityResultLauncher<String> requestPermissionLauncher;
 
     private TouristViewModel viewModel;
 
-    private TabLayout tabs;
     private ViewPager2 viewPager;
-    private TouristPagerAdapter touristPagerAdapter;
 
     private String[] tabNames;
 
@@ -49,11 +47,10 @@ public class TabActivity extends AppCompatActivity
                     if (isGranted) {
                         init();
                     } else {
-                        Toast.makeText(
-                                this,
-                                "The location updates is unavailable because the location "
-                                + "updates requires a ACCESS_FINE_LOCATION permission.",
-                                Toast.LENGTH_LONG)
+                        Snackbar.make(
+                                findViewById(R.id.activity_tab),
+                                R.string.permission_rationale,
+                                Snackbar.LENGTH_LONG)
                                 .show();
                     }
                 });
@@ -70,13 +67,13 @@ public class TabActivity extends AppCompatActivity
         viewModel = new ViewModelProvider(this).get(TouristViewModel.class);
         viewModel.getUserLocationsLiveData().observe(this, viewModel::setUserLocations);
 
-        tabs = findViewById(R.id.tabs);
+        TabLayout tabs = findViewById(R.id.tabs);
         viewPager = findViewById(R.id.viewPager);
         viewPager.setUserInputEnabled(false);
 
         tabNames = new String[]{getString(R.string.map), getString(R.string.location_list)};
 
-        touristPagerAdapter = new TouristPagerAdapter(this);
+        TouristPagerAdapter touristPagerAdapter = new TouristPagerAdapter(this);
         viewPager.setAdapter(touristPagerAdapter);
         new TabLayoutMediator(tabs, viewPager,
                 (tab, position) -> tab.setText(tabNames[position])).attach();

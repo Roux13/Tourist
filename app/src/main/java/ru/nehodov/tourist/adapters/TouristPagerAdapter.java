@@ -13,7 +13,7 @@ public class TouristPagerAdapter extends FragmentStateAdapter {
     private static final int FIRST_TAB = 0;
     private static final int SECOND_TAB = 1;
 
-    private int[] tabs;
+    private final int[] tabs;
 
     public TouristPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
         super(fragmentActivity);
@@ -29,7 +29,7 @@ public class TouristPagerAdapter extends FragmentStateAdapter {
             case SECOND_TAB:
                 return LocationListFragment.newInstance();
             default:
-                return null;
+                return new Fragment();
         }
     }
 

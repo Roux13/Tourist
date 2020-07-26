@@ -10,15 +10,16 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import ru.nehodov.tourist.R;
 import ru.nehodov.tourist.model.UserLocation;
 
 public class LocationListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private LocationListAdapterListener listener;
+    private final LocationListAdapterListener listener;
 
-    private List<UserLocation> locations = new ArrayList<>();
+    private final List<UserLocation> locations = new ArrayList<>();
 
     public LocationListAdapter(LocationListAdapterListener listener) {
         this.listener = listener;
@@ -42,8 +43,8 @@ public class LocationListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         TextView longitude = holder.itemView.findViewById(R.id.longitude);
         locationName.setText(location.getName());
         time.setText(location.getTime());
-        latitude.setText(String.format("%.5f", location.getLatitude()));
-        longitude.setText(String.format("%.5f", location.getLongitude()));
+        latitude.setText(String.format(Locale.getDefault(), "%.5f", location.getLatitude()));
+        longitude.setText(String.format(Locale.getDefault(), "%.5f", location.getLongitude()));
     }
 
     @Override

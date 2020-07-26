@@ -12,6 +12,7 @@ import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -21,6 +22,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -35,11 +37,16 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.IOException;
 import java.text.DateFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -70,6 +77,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private boolean isSelectedLocation;
     private UserLocation selectedLocation;
 
+    private View mapView;
+
     public static MapFragment newInstance() {
         return new MapFragment();
     }
@@ -77,7 +86,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         requestPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(), isGranted -> {
                     if (!isGranted) {
@@ -121,6 +129,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         configureLocationService();
     }
 
+    private void configureLocationService() {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        if (checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PERMISSION_DENIED) {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            configureLocationService();
+        }
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -139,16 +156,36 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        Places.initialize(requireActivity(), getString(R.string.google_maps_key));
+        AutocompleteSupportFragment autocompleteFragment =
+                (AutocompleteSupportFragment) getChildFragmentManager()
+                        .findFragmentById(R.id.autocomplete_fragment);
+        autocompleteFragment.setPlaceFields(Arrays.asList(
+                Place.Field.ID, Place.Field.LAT_LNG, Place.Field.ADDRESS));
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(@NonNull Place place) {
+                moveFocusToSelectedLocation(place);
+            }
+
+            @Override
+            public void onError(@NonNull Status status) {
+                Log.i(TAG, "An error occurred: " + status);
+            }
+        });
+
+        mapView = view;
+
         return view;
     }
 
-    private void configureLocationService() {
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
-        if (checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
-                == PERMISSION_DENIED) {
-            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
-            configureLocationService();
-        }
+    private void moveFocusToSelectedLocation(Place place) {
+        double latitude = place.getLatLng().latitude;
+        double longitude = place.getLatLng().longitude;
+        UserLocation selectPlace =
+                new UserLocation(place.getAddress(), "", latitude, longitude);
+        listener.selectLocation(selectPlace);
     }
 
     @Override
@@ -166,8 +203,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             configureMap();
         } else {
             map.getUiSettings().setZoomControlsEnabled(true);
+            map.getUiSettings();
+            if (mapView != null && mapView.findViewById(Integer.parseInt("1")) != null) {
+                // Get the button view
+                View locationButton = ((View) mapView.findViewById(Integer.parseInt("1"))
+                        .getParent()).findViewById(Integer.parseInt("2"));
+                // and next place it, under AutoComplete (as Google Maps app)
+                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams)
+                        locationButton.getLayoutParams();
+                // position under AutoComplete
+                layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0);
+                layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+                layoutParams.setMargins(0, 180, 180, 0);
+                locationButton.setOnClickListener((view -> onMyLocationButtonClick()));
+            }
             map.setMyLocationEnabled(true);
-            map.setOnMyLocationButtonClickListener(this);
         }
     }
 
@@ -255,6 +305,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     @Override
     public boolean onMyLocationButtonClick() {
+        Log.d(TAG, "Into onMyLocationButtonClick()");
         startLocationUpdates();
         listener.returnToCurrentLocation();
         return false;
@@ -270,6 +321,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         LiveData<Boolean> subscribeIsLocationSelected();
 
         void returnToCurrentLocation();
+
+        void selectLocation(UserLocation location);
     }
 
     @Override

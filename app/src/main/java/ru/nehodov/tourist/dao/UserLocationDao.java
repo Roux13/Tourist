@@ -7,7 +7,7 @@ import androidx.room.Query;
 
 import java.util.List;
 
-import ru.nehodov.tourist.model.UserLocation;
+import ru.nehodov.tourist.entities.UserLocation;
 
 @Dao
 public interface UserLocationDao {

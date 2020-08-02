@@ -15,7 +15,7 @@ import android.view.ViewGroup;
 import java.util.List;
 
 import ru.nehodov.tourist.adapters.LocationListAdapter;
-import ru.nehodov.tourist.model.UserLocation;
+import ru.nehodov.tourist.entities.UserLocation;
 
 public class LocationListFragment extends Fragment
         implements LocationListAdapter.LocationListAdapterListener {
@@ -32,7 +32,7 @@ public class LocationListFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_location_list, container, false);
-        RecyclerView recycler = view.findViewById(R.id.recycler);
+        RecyclerView recycler = view.findViewById(R.id.locationsRecycler);
         recycler.setLayoutManager(new LinearLayoutManager(requireActivity()));
         adapter = new LocationListAdapter(this);
         adapter.setLocations(listener.getLocations());

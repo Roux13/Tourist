@@ -1,4 +1,4 @@
-package ru.nehodov.tourist.model;
+package ru.nehodov.tourist.entities;
 
 import androidx.room.Entity;
 import androidx.room.Ignore;

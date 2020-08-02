@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Locale;
 
 import ru.nehodov.tourist.R;
-import ru.nehodov.tourist.model.UserLocation;
+import ru.nehodov.tourist.entities.UserLocation;
 
 public class LocationListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -28,8 +28,8 @@ public class LocationListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View view = inflater.inflate(R.layout.location_list_item, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.location_list_item, parent, false);
         return new RecyclerView.ViewHolder(view) { };
     }
 
@@ -49,11 +49,7 @@ public class LocationListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     @Override
     public int getItemCount() {
-        if (locations == null) {
-            return 0;
-        } else {
-            return locations.size();
-        }
+        return locations.size();
     }
 
     public void setLocations(List<UserLocation> locations) {

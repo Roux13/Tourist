@@ -1,6 +1,7 @@
 package ru.nehodov.tourist.viewmodel;
 
 import android.app.Application;
+import android.location.Location;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LifecycleOwner;
@@ -10,6 +11,8 @@ import androidx.lifecycle.MutableLiveData;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import ru.nehodov.tourist.RouteCallback;
+import ru.nehodov.tourist.entities.DirectionResults;
 import ru.nehodov.tourist.entities.RoutePoint;
 import ru.nehodov.tourist.entities.UserLocation;
 import ru.nehodov.tourist.entities.UserRoute;
@@ -23,6 +26,7 @@ public class TouristViewModel extends AndroidViewModel {
     private final LiveData<List<UserLocation>> userLocationsLiveData;
     private final LiveData<List<UserRoute>> userRoutesLiveData;
     private final LiveData<List<RoutePoint>> routePointsLiveData;
+    private final LiveData<DirectionResults> directionResultsData;
 
     private List<UserLocation> userLocations;
     private List<UserRoute> userRoutes;
@@ -41,6 +45,7 @@ public class TouristViewModel extends AndroidViewModel {
         userLocationsLiveData = repository.getAllLocations();
         userRoutesLiveData = repository.getAllRoutes();
         routePointsLiveData = repository.getAllRoutePoints();
+        directionResultsData = repository.getDirectionResults();
         isLocationUpdateStopped.setValue(Boolean.FALSE);
         isLocationSelected.setValue(Boolean.FALSE);
         isRouteSelected.setValue(Boolean.FALSE);
@@ -118,5 +123,16 @@ public class TouristViewModel extends AndroidViewModel {
 
     public void setIsRouteSelected(boolean isRouteSelected) {
         this.isRouteSelected.setValue(isRouteSelected);
+    }
+
+    public LiveData<DirectionResults> getDirectionResultsData() {
+        return directionResultsData;
+    }
+
+    public void askRoute(Location origin,
+                         Location destination,
+                         String key,
+                         RouteCallback callback) {
+        repository.getDirectionResults(origin, destination, key, callback);
     }
 }

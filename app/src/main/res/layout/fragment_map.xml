@@ -64,12 +64,12 @@
                 android:orientation="vertical">
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/landmarkFab"
+                    android:id="@+id/attractionsFab"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:clickable="true"
                     android:focusable="true"
-                    android:src="@drawable/ic_landmark_white_24"
+                    android:src="@drawable/ic_attractions_white_24"
                     android:backgroundTint="@color/colorAccent"
                     app:fabSize="mini" />
 
@@ -78,7 +78,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
-                    android:text="@string/landmarks"
+                    android:text="@string/attractions"
                     android:textAllCaps="true"
                     android:textColor="@color/colorAccent"
                     android:textSize="8sp" />

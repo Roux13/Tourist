@@ -1,5 +1,9 @@
 package ru.nehodov.tourist;
 
+import android.Manifest;
+import android.location.Location;
+import android.os.Bundle;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,9 +12,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
-import android.Manifest;
-import android.os.Bundle;
-
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -18,6 +19,7 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import java.util.List;
 
 import ru.nehodov.tourist.adapters.TouristPagerAdapter;
+import ru.nehodov.tourist.entities.DirectionResults;
 import ru.nehodov.tourist.entities.UserLocation;
 import ru.nehodov.tourist.entities.UserRoute;
 import ru.nehodov.tourist.viewmodel.TouristViewModel;
@@ -26,7 +28,7 @@ import static android.content.pm.PackageManager.PERMISSION_DENIED;
 
 public class TabActivity extends AppCompatActivity
         implements LocationListFragment.LocationListFragmentListener,
-        MapFragment.MapFragmentListener, RouteListFragment.RouteListFragmentListener {
+        MapFragmentListener, RouteListFragment.RouteListFragmentListener {
 
     private static final int MAP_ITEM_NUMBER = 0;
     private static final int LOCATION_LIST_ITEM_NUMBER = 1;
@@ -139,6 +141,19 @@ public class TabActivity extends AppCompatActivity
     @Override
     public List<UserRoute> getRoutes() {
         return viewModel.getAllRoutes();
+    }
+
+    @Override
+    public LiveData<DirectionResults> subscribeDirectionResults() {
+        return viewModel.getDirectionResultsData();
+    }
+
+    @Override
+    public void askRoute(Location origin,
+                         Location destination,
+                         String key,
+                         RouteCallback callback) {
+        viewModel.askRoute(origin, destination, key, callback);
     }
 
     @Override

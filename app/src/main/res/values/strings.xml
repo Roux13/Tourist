@@ -8,7 +8,7 @@
     <string name="location_list">Location list</string>
     <string name="route_list">Route list</string>
     <string name="permission_rationale">Location permission needed for core functionality</string>
-    <string name="landmarks">Landmarks</string>
+    <string name="attractions">Attractions</string>
     <string name="tracks">Rec. route</string>
     <string name="add_location">Add location</string>
     <string name="start">Recording…</string>

@@ -21,7 +21,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LiveData;
 
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -37,8 +36,10 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PointOfInterest;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.RoundCap;
@@ -48,6 +49,7 @@ import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.maps.android.PolyUtil;
 
 import java.io.IOException;
 import java.text.DateFormat;
@@ -61,6 +63,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import ru.nehodov.tourist.entities.DirectionResults;
 import ru.nehodov.tourist.entities.RoutePoint;
 import ru.nehodov.tourist.entities.UserLocation;
 import ru.nehodov.tourist.entities.UserRoute;
@@ -70,7 +73,7 @@ import static androidx.core.content.ContextCompat.checkSelfPermission;
 import static androidx.core.content.ContextCompat.getColor;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback,
-        GoogleMap.OnMyLocationButtonClickListener {
+        GoogleMap.OnMyLocationButtonClickListener, RouteCallback {
 
     private static final String TAG = "MapFragment.class";
     private static final int MIN_TIME_FOR_REQUEST_LOCATION_UPDATE = 1000;
@@ -96,6 +99,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private UserRoute selectedRoute;
     private boolean isTrackRecordStarted;
     private final List<LatLng> savedLatLngs = new ArrayList<>();
+    private DirectionResults directionResults;
     private Polyline routePolyline;
     private Marker marker;
 
@@ -193,6 +197,26 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_map, container, false);
 
+        subscribeData();
+
+        FloatingActionButton showAttractionsFab = view.findViewById(R.id.attractionsFab);
+        showAttractionsFab.setOnClickListener(this::onAttractionFabListener);
+        FloatingActionButton addNewLocationFab = view.findViewById(R.id.addNewLocationFab);
+        addNewLocationFab.setOnClickListener(this::onAddNewLocationFab);
+        FloatingActionButton trackRecordFab = view.findViewById(R.id.trackRecordFab);
+        trackRecordFab.setOnClickListener(this::onTrackRecordClick);
+
+        trackRecordingLabel = view.findViewById(R.id.trackRecordingLabel);
+
+        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+        mapView = view;
+        placesApiInit();
+        return view;
+    }
+
+    private void subscribeData() {
         listener.subscribeIsUpdateLocationStopped().observe(getViewLifecycleOwner(),
                 observedIsUpdateLocationStopped ->
                         isUpdateLocationStopped = observedIsUpdateLocationStopped);
@@ -204,37 +228,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                 observedLocation -> selectedLocation = observedLocation);
         listener.subscribeSelectedRoute().observe(getViewLifecycleOwner(),
                 observedSelectedRoute -> selectedRoute = observedSelectedRoute);
-
-        FloatingActionButton addNewLocationFab = view.findViewById(R.id.addNewLocationFab);
-        addNewLocationFab.setOnClickListener(this::onAddNewLocationFab);
-        FloatingActionButton trackRecordFab = view.findViewById(R.id.trackRecordFab);
-        trackRecordFab.setOnClickListener(this::onTrackRecordClick);
-
-        trackRecordingLabel = view.findViewById(R.id.trackRecordingLabel);
-
-        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-
-        Places.initialize(requireActivity(), getString(R.string.google_maps_key));
-        AutocompleteSupportFragment autocompleteFragment =
-                (AutocompleteSupportFragment) getChildFragmentManager()
-                        .findFragmentById(R.id.autocomplete_fragment);
-        autocompleteFragment.setPlaceFields(Arrays.asList(
-                Place.Field.ID, Place.Field.LAT_LNG, Place.Field.ADDRESS));
-        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(@NonNull Place place) {
-                moveFocusToSelectedLocation(place);
-            }
-
-            @Override
-            public void onError(@NonNull Status status) {
-                Log.i(TAG, "An error occurred: " + status);
-            }
-        });
-        mapView = view;
-        return view;
+        listener.subscribeDirectionResults().observe(getViewLifecycleOwner(),
+                observedDirectionResults -> directionResults = observedDirectionResults);
     }
 
     private void moveFocusToSelectedLocation(Place place) {
@@ -302,6 +297,52 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         }
     }
 
+    private void onAttractionFabListener(View view) {
+        map.setMapStyle(MapStyleOptions.loadRawResourceStyle(
+                requireActivity(),
+                R.raw.disable_poi_and_transport_on_map));
+        map.setOnPoiClickListener(this::askRootToLocation);
+        stopLocationUpdates();
+        map.clear();
+    }
+
+    @Override
+    public void drawRouteToAttraction() {
+        Flowable.fromIterable(directionResults.getRoutes())
+                .subscribeOn(Schedulers.computation())
+                .flatMapIterable(route -> PolyUtil.decode(route.getOverviewPolyLine().getPoints()))
+                .toList()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(this::configurePolyline);
+    }
+
+    private void askRootToLocation(PointOfInterest pointOfInterest) {
+        Location destination = new Location(pointOfInterest.name);
+        destination.setLatitude(pointOfInterest.latLng.latitude);
+        destination.setLongitude(pointOfInterest.latLng.longitude);
+        listener.askRoute(currentLocation, destination, getString(R.string.google_maps_key), this);
+    }
+
+    private void placesApiInit() {
+        Places.initialize(requireActivity(), getString(R.string.google_maps_key));
+        AutocompleteSupportFragment autocompleteFragment =
+                (AutocompleteSupportFragment) getChildFragmentManager()
+                        .findFragmentById(R.id.autocomplete_fragment);
+        autocompleteFragment.setPlaceFields(Arrays.asList(
+                Place.Field.ID, Place.Field.LAT_LNG, Place.Field.ADDRESS));
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(@NonNull Place place) {
+                moveFocusToSelectedLocation(place);
+            }
+
+            @Override
+            public void onError(@NonNull Status status) {
+                Log.i(TAG, "An error occurred: " + status);
+            }
+        });
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -347,6 +388,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
     public void onAddNewLocationFab(View view) {
+        disableAttractionMode();
         Log.d(TAG, "Into onAddNewLocationFab");
         Geocoder geocoder = new Geocoder(requireActivity(), Locale.getDefault());
         List<Address> addresses = new ArrayList<>();
@@ -373,7 +415,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     @Override
     public boolean onMyLocationButtonClick() {
+        disableAttractionMode();
+        drawAllLocationMarkers();
         Log.d(TAG, "Into onMyLocationButtonClick()");
+        map.setMapStyle(MapStyleOptions.loadRawResourceStyle(
+                requireActivity(),
+                R.raw.disable_poi_and_transport_on_map));
         if (routePolyline != null) {
             routePolyline.remove();
         }
@@ -385,7 +432,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         return false;
     }
 
-    void onTrackRecordClick(View view) {
+    private void disableAttractionMode() {
+        map.clear();
+        map.setMapStyle(MapStyleOptions.loadRawResourceStyle(
+                requireActivity(),
+                R.raw.enable_poi_andtransport));
+        stopLocationUpdates();
+    }
+
+    public void onTrackRecordClick(View view) {
+        disableAttractionMode();
         listener.returnToCurrentLocation();
         FloatingActionButton thisFab = (FloatingActionButton) view;
         if (isTrackRecordStarted) {
@@ -457,28 +513,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         if (marker != null) {
             marker.remove();
         }
-    }
-
-    public interface MapFragmentListener {
-        void addNewLocation(UserLocation location);
-
-        void addNewRoute(UserRoute route);
-
-        List<UserLocation> getLocations();
-
-        LiveData<UserLocation> subscribeSelectedLocation();
-
-        LiveData<Boolean> subscribeIsUpdateLocationStopped();
-
-        LiveData<Boolean> subscribeIsLocationSelected();
-
-        LiveData<Boolean> subscribeIsRouteSelected();
-
-        LiveData<UserRoute> subscribeSelectedRoute();
-
-        void returnToCurrentLocation();
-
-        void selectLocation(UserLocation location);
     }
 
     @Override

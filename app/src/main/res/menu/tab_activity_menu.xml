@@ -4,7 +4,7 @@
 
     <item
         android:id="@+id/landmarks_menu_item"
-        android:title="@string/landmarks"
+        android:title="@string/attractions"
         app:showAsAction="ifRoom|withText"
         />
     <item

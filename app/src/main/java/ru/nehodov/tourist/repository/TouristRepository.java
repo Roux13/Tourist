@@ -108,7 +108,11 @@ public class TouristRepository {
 
                 @Override
                 public void onFailure(Call<DirectionResults> call, Throwable t) {
-                    Log.d(TAG, t.getMessage());
+                    if (t.getMessage() != null) {
+                        Log.d(TAG, t.getMessage());
+                    } else {
+                        Log.d(TAG, "t.getMessage() is null");
+                    }
                 }
             });
     }
